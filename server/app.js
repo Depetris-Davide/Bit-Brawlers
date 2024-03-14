@@ -3,15 +3,27 @@ const app = express();
 const port = 3000;
 const path = require("path");
 
+function generaColoreRandomico() {
+    var r = Math.floor(Math.random() * 256);
+    var g = Math.floor(Math.random() * 256);
+    var b = Math.floor(Math.random() * 256);
+
+    var colore = "#" + toHex(r) + toHex(g) + toHex(b);
+
+    return colore;
+}
+
+function toHex(numero) {
+    var hex = numero.toString(16);
+    return hex.length === 1 ? "0" + hex : hex;
+}
+
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "../public"));
+app.use(express.static(path.join(__dirname, "../public")));
 
 app.get("/", (req, res) => {
     res.render("classSelectWindow.ejs");
-});
-
-app.get("/maximumClients", (req, res) => {
-    res.render("maximumClients.ejs");
 });
 
 const server = app.listen(port, () =>
@@ -21,36 +33,33 @@ const server = app.listen(port, () =>
 const { Server } = require("ws");
 const ws_server = new Server({ server });
 
-let players = []
-let selectedButtons = []
-let connectedClients = 0
-const maxClients = 2
+let listaSquare = [];
 
 ws_server.on("connection", (wsc) => {
-    if (connectedClients >= maxClients) {
-        // Reject the connection if the maximum number of clients is reached
-        console.log("Connection rejected: Maximum clients reached");
-        wsc.send(JSON.stringify({ type: "clientNotAllowed" }));
-        wsc.close();
-        return;
-    }
-    connectedClients++;
+    let id = Date.now();
+    let messageConnection = { type: "init", id: id };
+    let squareColor1 = generaColoreRandomico();
+    let squareColor2 = generaColoreRandomico();
+    wsc.send(JSON.stringify(messageConnection));
 
-    let id;
-    console.log("Connesso");
+    listaSquare.forEach((square) => {
+        let message = square;
+        if (square.id != id) {
+            wsc.send(JSON.stringify(message));
+        }
+    });
 
-    // Inform the new client about existing players
-    players.forEach((player) => {
-        wsc.send(JSON.stringify({
-            type: "spawnPlayer",
-            id: player.id,
-            posX: player.posX,
-            posY: player.posY
-        }));
-
-        selectedButtons.forEach((selectedButton) => {
-            wsc.send(JSON.stringify({ type: "disableButton", id: selectedButton }));
-        });
+    ws_server.clients.forEach((client) => {
+        let message = {
+            type: "spawnSquare",
+            posX: 50,
+            posY: 50,
+            color: `${squareColor1}`,
+            borderColor: `${squareColor2}`,
+            id: id,
+        };
+        listaSquare.push(message);
+        client.send(JSON.stringify(message));
     });
 
     wsc.on("message", (data) => {
@@ -64,58 +73,29 @@ ws_server.on("connection", (wsc) => {
                     posY: message.posY,
                 };
 
-                console.log("Si sta muovendo: " + message.id)
-
                 ws_server.clients.forEach((client) => {
                     client.send(JSON.stringify(message));
                 });
 
-                players.forEach((square) => {
+                listaSquare.forEach((square) => {
                     if (square.id == message.id) {
                         square.posX = message.posX;
                         square.posY = message.posY;
                     }
                 });
                 break;
-            case "classSelected":
-                wsc.send(JSON.stringify({ type: "init", id: message.id }));
-                id = message.id
-
-                ws_server.clients.forEach((client) => {
-
-                    let spawnPlayer = {
-                        type: "spawnPlayer",
-                        id: message.id,
-                    };
-
-                    players.push(spawnPlayer)
-
-                    client.send(JSON.stringify(spawnPlayer));
-                });
-
-                selectedButtons.push(message.id);
-
-                ws_server.clients.forEach((client) => {
-                    let disableButton = { type: "disableButton", id: message.id };
-                    client.send(JSON.stringify(disableButton));
-                });
-                break
         }
     });
     wsc.on("close", (wsc) => {
-        connectedClients--;
-        //Quando si sconnette qualcuno, elimina il suo quadrato dai client e dal server
         console.log("scollegato");
-
-        players = players.filter((square) => square.id !== id);
-        selectedButtons = selectedButtons.filter((button) => button !== id);
-
+        for (let i = 0; i < listaSquare.length; i++) {
+            if (listaSquare[i].id == id) {
+                listaSquare.splice(i, 1);
+            }
+        }
         ws_server.clients.forEach((client) => {
             let message = { type: "deleteSquare", id: id };
             client.send(JSON.stringify(message));
-
-            let enableButton = { type: "enableButton", id: id };
-            client.send(JSON.stringify(enableButton));
         });
     });
 });
