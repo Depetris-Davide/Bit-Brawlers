@@ -1,117 +1,37 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<link rel="stylesheet" href="style.css">
-<body>
-    <p> Usa le frecce per muoverti! </p>
-    <div id="schermata">
+<%- include('partials/header.ejs') %>
 
-    </div>
-</body>
+    <body>
+        <button onclick="classSelected('knight')">
+            KNIGHT
+        </button>
+    </body>
 
-<script>
-    let webSocket = new WebSocket(window.location.href.replace(/^http/, 'ws'));
-    let id;
-    let square;
-    let schermata = document.getElementById("schermata")
-    webSocket.addEventListener("open", ()=>{
-        console.log("Connesso al server")
-    })
+    <script>
+        let id
+        let webSocket = new WebSocket(window.location.href.replace(/^http/, 'ws'));
+        webSocket.addEventListener("open", () => {
+            console.log("Connesso al server")
+        })
 
-    webSocket.addEventListener("message", (data)=>{
-        let message = JSON.parse(data.data)
-        switch(message.type) {
-            case "init":
-                id = message.id
-                break;
-            case "spawnSquare":
-                let squareSpawn = document.createElement("div")
-                
-                squareSpawn.className = "square"
-                squareSpawn.style.backgroundColor = message.color;
-                squareSpawn.style.left = message.posX + 'px';
-                squareSpawn.style.top = message.posY + 'px';
-                squareSpawn.style.borderColor = message.borderColor;
-                squareSpawn.id = message.id;
-
-                schermata.appendChild(squareSpawn)
-
-                if(message.id == id) {
-                    square = document.getElementById(id);
-                    console.log("Mio!")
-                    console.log(square.id)
-                }
-                break;
-            case "deleteSquare":
-                let squareToDelete = document.getElementById(`${message.id}`)
-                squareToDelete.remove()
-                break;
-            case "moveSquare":
-                let squareToMove = document.getElementById(`${message.id}`)
-                squareToMove.style.left = message.posX + 'px';
-                squareToMove.style.top = message.posY + 'px';
-                break;
-            case "test":
-                console.log(message) 
-            break; 
-        }
-    })
-
-    webSocket.onclose = () =>{
-        webSocket.close()
-    }
-
-    document.addEventListener('keydown', function(event) {
-        if (event.code === 'ArrowLeft') {
-            let message = {
-                type: "moveSquare",
-                id: id,
-                posX: parseInt(square.style.left, 10) - 50,
-                posY: parseInt(square.style.top, 10),
-            }; 
+        function classSelected(name) {
+            let message = { type: "classSelected", name: name }
             webSocket.send(JSON.stringify(message))
         }
-    });
 
-    document.addEventListener('keydown', function(event) {
-        if (event.code === 'ArrowUp') {
-            let message = {
-                type: "moveSquare",
-                id: id,
-                posX: parseInt(square.style.left, 10),
-                posY: parseInt(square.style.top, 10) - 50,
-            }; 
-            webSocket.send(JSON.stringify(message))
-        }
-    });
+        webSocket.addEventListener("message", (data) => {
+            let message = JSON.parse(data.data)
+            console.log(message.type)
+            switch (message.type) {
+                case "init":
+                    id = message.name
+                    location.href = 'battleground'
+                    break;
+            }
+        })
 
-    document.addEventListener('keydown', function(event) {
-        if (event.code === 'ArrowRight') {
-            let message = {
-                type: "moveSquare",
-                id: id,
-                posX: parseInt(square.style.left, 10) + 50,
-                posY: parseInt(square.style.top, 10),
-            }; 
-            webSocket.send(JSON.stringify(message))
+        webSocket.onclose = () => {
+            webSocket.close()
         }
-    });
+    </script>
 
-    document.addEventListener('keydown', function(event) {
-        if (event.code === 'ArrowDown') {
-            
-            let message = {
-                type: "moveSquare",
-                id: id,
-                posX: parseInt(square.style.left, 10),
-                posY: parseInt(square.style.top, 10) + 50,
-            }; 
-            webSocket.send(JSON.stringify(message))
-        }
-    });
-</script>
-</html>
+    </html>

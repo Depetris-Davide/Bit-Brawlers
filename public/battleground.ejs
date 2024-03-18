@@ -1,0 +1,72 @@
+<%- include('partials/header.ejs') %>
+<body>
+    <p> Usa le frecce per muoverti! </p>
+    <div id="schermata">
+
+    </div>
+</body>
+
+<script>
+    let webSocket = new WebSocket(window.location.href.replace(/^http/, 'ws'));
+    let playerName;
+    let schermata = document.getElementById("schermata")
+    webSocket.addEventListener("open", ()=>{
+        console.log("Connesso al server")
+        let message = {type: "spawnPlayer"}
+        webSocket.send(JSON.stringify(message))
+    })
+
+    webSocket.addEventListener("message", (data)=>{
+        let message = JSON.parse(data.data)
+        console.log(message.type)
+        switch(message.type) {
+            case "spawnPlayer":
+                let squareSpawn = document.createElement("div")
+                
+                squareSpawn.className = "square"
+                squareSpawn.style.left = message.posX + 'px';
+                squareSpawn.style.top = message.posY + 'px';
+                squareSpawn.id = message.name;
+                playerName = message.name
+
+                schermata.appendChild(squareSpawn)
+
+                if(message.id == id) {
+                    square = document.getElementById(id);
+                    console.log("Mio!")
+                    console.log(square.id)
+                }
+                break;
+            case "deleteSquare":
+                let squareToDelete = document.getElementById(`${message.name}`)
+                squareToDelete.remove()
+                break;
+            case "moveSquare":
+                let squareToMove = document.getElementById(`${message.name}`)
+                squareToMove.style.left = message.posX + 'px';
+                squareToMove.style.top = message.posY + 'px';
+                break;
+            case "test":
+                console.log(message) 
+            break; 
+        }
+    })
+
+    webSocket.onclose = () =>{
+        webSocket.close()
+    }
+
+    document.addEventListener('keydown', function(event) {
+        if (event.code === 'ArrowDown') {
+            
+            let message = {
+                type: "moveSquare",
+                id: playerName,
+                posX: parseInt(square.style.left, 10),
+                posY: parseInt(square.style.top, 10) + 50,
+            }; 
+            webSocket.send(JSON.stringify(message))
+        }
+    });
+</script>
+</html>
