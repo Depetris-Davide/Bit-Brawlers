@@ -30,14 +30,13 @@ ws_server.on("connection", (wsc) => {
         let message = JSON.parse(data);
         switch (message.type) {
             case "classSelected":
-                let messageConnection = {type: 'init', name: message.name}
+                let messageConnection = {type: "init"}
                 wsc.send(JSON.stringify(messageConnection));
                 break
             case "spawnPlayer":
                 ws_server.clients.forEach((client) => {
                     let newMessage = {
                         type: "spawnPlayer",
-                        name: message.name,
                         posX: 100,
                         posY: 100
                     }
@@ -45,7 +44,7 @@ ws_server.on("connection", (wsc) => {
                     client.send(JSON.stringify(newMessage));
                 });
                 break
-            case "moveSquare":
+            /*case "moveSquare":
                 message = {
                     type: "moveSquare",
                     id: message.id,
@@ -63,7 +62,7 @@ ws_server.on("connection", (wsc) => {
                         square.posY = message.posY;
                     }
                 })
-                break
+                break*/
         }
     });
     wsc.on("close", (wsc) => {

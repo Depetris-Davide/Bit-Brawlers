@@ -1,42 +1,163 @@
 <%- include('partials/header.ejs') %>
-<body>
-    <p> Usa le frecce per muoverti! </p>
-    <div id="schermata">
 
-    </div>
-</body>
+    <body>
+        <p> Usa le frecce per muoverti! </p>
+        <canvas></canvas>
+        <div id="schermata">
 
-<script>
-    let webSocket = new WebSocket(window.location.href.replace(/^http/, 'ws'));
-    let playerName;
-    let schermata = document.getElementById("schermata")
-    webSocket.addEventListener("open", ()=>{
-        console.log("Connesso al server")
-        let message = {type: "spawnPlayer"}
-        webSocket.send(JSON.stringify(message))
-    })
+        </div>
+    </body>
 
-    webSocket.addEventListener("message", (data)=>{
-        let message = JSON.parse(data.data)
-        console.log(message.type)
-        switch(message.type) {
-            case "spawnPlayer":
-                let squareSpawn = document.createElement("div")
-                
+    <script>
+        const canvas = document.querySelector('canvas')
+        const c = canvas.getContext('2d')
+        let webSocket = new WebSocket(window.location.href.replace(/^http/, 'ws'));
+
+        canvas.width = 1024
+        canvas.height = 576
+
+        c.fillRect(0, 0, canvas.width, canvas.height)
+
+        class Sprite {
+            constructor(playerClass, position, velocity) {
+                this.playerClass = playerClass
+                this.position = position
+                this.velocity = velocity
+            }
+
+            draw() {
+                c.fillStyle = 'grey'
+                c.fillRect(this.position.x, this.position.y, 50, 150)
+                c.fillStyle = 'red'
+                c.fillRect(this.position.y, this.position.y + 150, 5 ,5)
+            }
+
+            update() {
+                this.draw()
+
+                this.position.x += this.velocity.x
+                this.position.y += this.velocity.y
+
+                if(this.position.y + this.height + this.velocity.y >= canvas.height){
+                    this.velocity.y = 0
+                }
+            }
+        }
+
+        const selectedClass = localStorage.getItem("selectedClass");
+        const player = new Sprite(
+            selectedClass,
+            {
+                x: 0,
+                y: 0
+            },
+            {
+                x: 0,
+                y: 0
+            }
+        )
+
+        const keys = {
+            w: false,
+            a: false,
+            s: false,
+            d: false
+        }
+
+        function animate() {
+            window.requestAnimationFrame(animate)
+            c.fillStyle = 'black'
+            c.fillRect(0, 0, canvas.width, canvas.height)
+            player.update()
+
+            player.velocity.x = 0
+            player.velocity.y = 0
+
+            if (keys.w) {
+                player.velocity.y = -1
+            } if (keys.a) {
+                player.velocity.x = -1
+            } if (keys.s) {
+                player.velocity.y = 1
+            } if (keys.d) {
+                player.velocity.x = 1
+            }
+        }
+
+        animate()
+
+        window.addEventListener('keydown', function (event) {
+            switch (event.key) {
+                case 'w':
+                    keys.w = true
+                    break
+                case 'a':
+                    keys.a = true
+                    break
+                case 's':
+                    keys.s = true
+                    break
+                case 'd':
+                    keys.d = true
+                    break
+            }
+
+            /*let message = {
+                type: "moveSquare",
+                id: playerName,
+                posX: parseInt(square.style.left, 10),
+                posY: parseInt(square.style.top, 10) + 50,
+            };
+            webSocket.send(JSON.stringify(message))*/
+
+        });
+
+        window.addEventListener('keyup', function (event) {
+            switch (event.key) {
+                case 'w':
+                    keys.w = false
+                    break
+                case 'a':
+                    keys.a = false
+                    break
+                case 's':
+                    keys.s = false
+                    break
+                case 'd':
+                    keys.d = false
+                    break
+            }
+
+            /*let message = {
+                type: "moveSquare",
+                id: playerName,
+                posX: parseInt(square.style.left, 10),
+                posY: parseInt(square.style.top, 10) + 50,
+            };
+            webSocket.send(JSON.stringify(message))*/
+
+        });
+
+        webSocket.addEventListener("open", () => {
+            console.log("Connesso al server")
+        })
+
+        webSocket.addEventListener("message", (data) => {
+            let message = JSON.parse(data.data)
+            switch (message.type) {
+                case "spawnPlayer":
+
+
+                /*let squareSpawn = document.createElement("div")
+
+                console.log(message)
                 squareSpawn.className = "square"
                 squareSpawn.style.left = message.posX + 'px';
                 squareSpawn.style.top = message.posY + 'px';
-                squareSpawn.id = message.name;
+                squareSpawn.id = selectedClass;
                 playerName = message.name
 
                 schermata.appendChild(squareSpawn)
-
-                if(message.id == id) {
-                    square = document.getElementById(id);
-                    console.log("Mio!")
-                    console.log(square.id)
-                }
-                break;
             case "deleteSquare":
                 let squareToDelete = document.getElementById(`${message.name}`)
                 squareToDelete.remove()
@@ -47,26 +168,14 @@
                 squareToMove.style.top = message.posY + 'px';
                 break;
             case "test":
-                console.log(message) 
-            break; 
-        }
-    })
+                console.log(message)
+                break;*/
+            }
+        })
 
-    webSocket.onclose = () =>{
-        webSocket.close()
-    }
-
-    document.addEventListener('keydown', function(event) {
-        if (event.code === 'ArrowDown') {
-            
-            let message = {
-                type: "moveSquare",
-                id: playerName,
-                posX: parseInt(square.style.left, 10),
-                posY: parseInt(square.style.top, 10) + 50,
-            }; 
-            webSocket.send(JSON.stringify(message))
+        webSocket.onclose = () => {
+            webSocket.close()
         }
-    });
-</script>
-</html>
+    </script>
+
+    </html>
