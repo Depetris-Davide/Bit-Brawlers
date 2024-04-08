@@ -1,7 +1,7 @@
 <%- include('partials/header.ejs') %>
 
     <body>
-        <button onclick="classSelected('knight')">
+        <button onclick="classSelected('Knight')">
             KNIGHT
         </button>
     </body>
@@ -13,15 +13,14 @@
         })
 
         function classSelected(name) {
-            localStorage.setItem("selectedClass", name);
-            let message = { type: "classSelected"}
+            let message = { type: "classSelected", name: name}
             webSocket.send(JSON.stringify(message))
         }
 
         webSocket.addEventListener("message", (data) => {
             let message = JSON.parse(data.data)
             switch (message.type) {
-                case "init":
+                case "changeLocation":
                     location.href = 'battleground'
                     break;
             }

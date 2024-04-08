@@ -13,6 +13,8 @@
         const c = canvas.getContext('2d')
         let webSocket = new WebSocket(window.location.href.replace(/^http/, 'ws'));
 
+        let playerClass
+
         canvas.width = 1024
         canvas.height = 576
 
@@ -29,7 +31,7 @@
                 c.fillStyle = 'grey'
                 c.fillRect(this.position.x, this.position.y, 50, 150)
                 c.fillStyle = 'red'
-                c.fillRect(this.position.y, this.position.y + 150, 5 ,5)
+                c.fillRect(this.position.y, this.position.y + 150, 5, 5)
             }
 
             update() {
@@ -38,24 +40,14 @@
                 this.position.x += this.velocity.x
                 this.position.y += this.velocity.y
 
-                if(this.position.y + this.height + this.velocity.y >= canvas.height){
+                if (this.position.y + this.height + this.velocity.y >= canvas.height) {
                     this.velocity.y = 0
                 }
             }
         }
 
         const selectedClass = localStorage.getItem("selectedClass");
-        const player = new Sprite(
-            selectedClass,
-            {
-                x: 0,
-                y: 0
-            },
-            {
-                x: 0,
-                y: 0
-            }
-        )
+        let player
 
         const keys = {
             w: false,
@@ -83,8 +75,6 @@
                 player.velocity.x = 1
             }
         }
-
-        animate()
 
         window.addEventListener('keydown', function (event) {
             switch (event.key) {
@@ -140,6 +130,10 @@
 
         webSocket.addEventListener("open", () => {
             console.log("Connesso al server")
+            let message = {
+                type: "spawnPlayer"
+            };
+            webSocket.send(JSON.stringify(message))
         })
 
         webSocket.addEventListener("message", (data) => {
@@ -147,29 +141,26 @@
             switch (message.type) {
                 case "spawnPlayer":
 
+                    player = new Sprite(
+                        message.selectedClass,
+                        message.player.position,
+                        message.player.velocity
+                    );
 
-                /*let squareSpawn = document.createElement("div")
-
-                console.log(message)
-                squareSpawn.className = "square"
-                squareSpawn.style.left = message.posX + 'px';
-                squareSpawn.style.top = message.posY + 'px';
-                squareSpawn.id = selectedClass;
-                playerName = message.name
-
-                schermata.appendChild(squareSpawn)
-            case "deleteSquare":
-                let squareToDelete = document.getElementById(`${message.name}`)
-                squareToDelete.remove()
-                break;
-            case "moveSquare":
-                let squareToMove = document.getElementById(`${message.name}`)
-                squareToMove.style.left = message.posX + 'px';
-                squareToMove.style.top = message.posY + 'px';
-                break;
-            case "test":
-                console.log(message)
-                break;*/
+                    animate()
+                    break
+                /*case "deleteSquare":
+                    let squareToDelete = document.getElementById(`${message.name}`)
+                    squareToDelete.remove()
+                    break;
+                case "moveSquare":
+                    let squareToMove = document.getElementById(`${message.name}`)
+                    squareToMove.style.left = message.posX + 'px';
+                    squareToMove.style.top = message.posY + 'px';
+                    break;
+                case "test":
+                    console.log(message)
+                    break;*/
             }
         })
 
