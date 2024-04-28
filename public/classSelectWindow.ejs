@@ -1,8 +1,11 @@
 <%- include('partials/header.ejs') %>
 
     <body>
-        <button onclick="classSelected('Knight')">
+        <button onclick="brawlerSelected('Knight')">
             KNIGHT
+        </button>
+        <button onclick="brawlerSelected('Archer')">
+            Archer
         </button>
     </body>
 
@@ -12,17 +15,28 @@
             console.log("Connesso al server")
         })
 
-        function classSelected(name) {
-            let message = { type: "classSelected", name: name}
+        function brawlerSelected(ID_Client) {
+            let message = { type: "brawlerAvailable", ID_Server: ID_Client }
             webSocket.send(JSON.stringify(message))
+            console.log(message)
+
+            /*message = { type: "brawlerSelected", ID_Server: ID_Client}
+            webSocket.send(JSON.stringify(message))
+
+            //location.href = 'battleground?clientID=' + ID_Client*/
         }
 
         webSocket.addEventListener("message", (data) => {
             let message = JSON.parse(data.data)
             switch (message.type) {
-                case "changeLocation":
-                    location.href = 'battleground'
-                    break;
+                case "availableReponse":
+
+                    if(message.available){
+                        console.log("disponibile")
+                    }else{
+                        console.log("non disponibile")
+                    }
+                    break
             }
         })
 

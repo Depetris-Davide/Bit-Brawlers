@@ -28,32 +28,92 @@ const server = app.listen(port);
 const { Server } = require("ws");
 const ws_server = new Server({ server });
 
-let selectedClass
+let clientConnections = {}
 
 ws_server.on("connection", (wsc) => {
 
+    let clientID
+    query = "INSERT INTO Player (ID_Brawler) VALUES (?)";
+    values = [null];
 
+    executeQuery(query, values, function (err, result) {
+        if (err) {
+            console.error(err);
+            return;
+        }
 
-    wsc.on("message", (data) => {
+        clientID = result.insertId
+        clientConnections[clientID] = wsc
+    });
+
+    /*query = "SELECT ID FROM Player WHERE ID = ? AND Available = 1";
+
+    executeQuery(query, values, function (err, result) {
+        if (err) {
+            console.error(err);
+            return;
+        }
+
+        let response = { type: "availableResponse", available: true }
+
+        if (result[0].AvailableNumber == 0) {
+            response.available = false;
+        }
+
+        ws_server.client.send(JSON.stringify(response));
+    });
+
+    /*wsc.on("message", (data) => {
         let message = JSON.parse(data);
+        let query, values
         switch (message.type) {
-            case "classSelected":
-                selectedClass = message.name
+            case "brawlerAvailable":
 
-                query = "UPDATE class SET Selected = ? WHERE Name = ?";
-                executeQuery(query, [true, message.name], function (err, elenco, campi) {
+                query = "SELECT COUNT(*) AS AvailableNumber FROM Brawler WHERE ID = ? AND Available = 1";
+                values = [message.ID_Server];
+
+                executeQuery(query, values, function (err, result) {
+                    if (err) {
+                        console.error(err);
+                        return;
+                    }
+
+                    let response = { type: "availableResponse", available: true }
+
+                    if (result[0].AvailableNumber == 0) {
+                        response.available = false;
+                    }
+
+                    ws_server.client.send(JSON.stringify(response));
+                });
+                break
+            case "brawlerSelected":
+
+                query = "INSERT INTO Player (ID_Brawler) VALUES (?)";
+                values = [message.ID_Server];
+
+                executeQuery(query, values, function (err, elenco, campi) {
                     if (err) {
                         console.error(err);
                         return;
                     }
                 });
-                let messageConnection = { type: "changeLocation" }
-                wsc.send(JSON.stringify(messageConnection));
+
+                query = "UPDATE Brawler SET Available = 0 WHERE ID = ?";
+                values = [message.ID_Server];
+
+                executeQuery(query, values, function (err, elenco, campi) {
+                    if (err) {
+                        console.error(err);
+                        return;
+                    }
+                });
                 break
             case "spawnPlayer":
+                console.log("prova")
                 ws_server.clients.forEach((client) => {
                     let newPlayer = {
-                        selectedClass: selectedClass,
+                        //selectedClass: selectedClass,
                         position: { x: 0, y: 0 },
                         velocity: { x: 0, y: 0 }
                     };
@@ -85,20 +145,21 @@ ws_server.on("connection", (wsc) => {
                         square.posY = message.posY;
                     }
                 })
-                break*/
+                break
         }
-    });
-    wsc.on("close", (wsc) => {
-        console.log("scollegato");
-        /*for (let i = 0; i < listaSquare.length; i++) {
-        if (listaSquare[i].id == id) {
-            listaSquare.splice(i, 1);
-        }
-    }
-    ws_server.clients.forEach((client) => {
-        let message = { type: "deleteSquare", id: id };
-        client.send(JSON.stringify(message));
     });*/
+    wsc.on("close", (wsc) => {
+        delete clientConnections[clientID];
+
+        const deleteQuery = "DELETE FROM Player WHERE ID = ?";
+        const values = [clientID];
+
+        executeQuery(deleteQuery, values, function (err, result) {
+            if (err) {
+                console.error('Errore eliminazione giocatore', err);
+                return;
+            }
+        });
     });
 });
 

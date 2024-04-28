@@ -9,6 +9,11 @@
     </body>
 
     <script>
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+        const ID_Client = urlParams.get('clientID')
+
+        console.log(ID_Client)
         const canvas = document.querySelector('canvas')
         const c = canvas.getContext('2d')
         let webSocket = new WebSocket(window.location.href.replace(/^http/, 'ws'));
