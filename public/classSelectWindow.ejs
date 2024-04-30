@@ -10,13 +10,16 @@
     </body>
 
     <script>
+        let ID_Client
+
         let webSocket = new WebSocket(window.location.href.replace(/^http/, 'ws'));
         webSocket.addEventListener("open", () => {
             console.log("Connesso al server")
         })
 
-        function brawlerSelected(ID_Client) {
-            let message = { type: "brawlerAvailable", ID_Server: ID_Client }
+        function brawlerSelected(ID_Chosen) {
+            ID_Client = ID_Chosen
+            let message = { type: "brawlerAvailable", ID_Server: ID_Chosen }
             webSocket.send(JSON.stringify(message))
             console.log(message)
 
@@ -29,11 +32,13 @@
         webSocket.addEventListener("message", (data) => {
             let message = JSON.parse(data.data)
             switch (message.type) {
-                case "availableReponse":
-
-                    if(message.available){
+                case "availableResponse":
+                    console.log("response")
+                    if (message.available) {
                         console.log("disponibile")
-                    }else{
+                        let message = { type: "brawlerSelected", ID_Server: ID_Client }
+                        webSocket.send(JSON.stringify(message))
+                    } else {
                         console.log("non disponibile")
                     }
                     break
@@ -41,6 +46,8 @@
         })
 
         webSocket.onclose = () => {
+            
+
             webSocket.close()
         }
     </script>

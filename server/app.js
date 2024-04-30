@@ -28,11 +28,10 @@ const server = app.listen(port);
 const { Server } = require("ws");
 const ws_server = new Server({ server });
 
-let clientConnections = {}
+let clientConnections = []
 
 ws_server.on("connection", (wsc) => {
 
-    let clientID
     query = "INSERT INTO Player (ID_Brawler) VALUES (?)";
     values = [null];
 
@@ -42,8 +41,8 @@ ws_server.on("connection", (wsc) => {
             return;
         }
 
-        clientID = result.insertId
-        clientConnections[clientID] = wsc
+        clientConnections.push({client: wsc, ID: result.insertId})
+        console.log(clientConnections)
     });
 
     /*query = "SELECT ID FROM Player WHERE ID = ? AND Available = 1";
@@ -63,7 +62,7 @@ ws_server.on("connection", (wsc) => {
         ws_server.client.send(JSON.stringify(response));
     });
 
-    /*wsc.on("message", (data) => {
+    */wsc.on("message", (data) => {
         let message = JSON.parse(data);
         let query, values
         switch (message.type) {
@@ -83,14 +82,13 @@ ws_server.on("connection", (wsc) => {
                     if (result[0].AvailableNumber == 0) {
                         response.available = false;
                     }
-
-                    ws_server.client.send(JSON.stringify(response));
+                    console.log("mando messaggio")
+                    wsc.send(JSON.stringify(response));
                 });
                 break
             case "brawlerSelected":
-
-                query = "INSERT INTO Player (ID_Brawler) VALUES (?)";
-                values = [message.ID_Server];
+                query = "UPDATE Player SET ID_Brawler = ? WHERE ID = ?";
+                values = [message.ID_Server, clientID];
 
                 executeQuery(query, values, function (err, elenco, campi) {
                     if (err) {
@@ -145,14 +143,40 @@ ws_server.on("connection", (wsc) => {
                         square.posY = message.posY;
                     }
                 })
-                break
+                break*/
         }
-    });*/
+    });
     wsc.on("close", (wsc) => {
-        delete clientConnections[clientID];
+        let clientID = clientConnections[wsc].ID
+        const selectBrawlerQuery = "SELECT ID_Brawler FROM Player WHERE ID = ?";
+        console.log(clientID)
+        const selectBrawlerValues = [clientID];
+
+        executeQuery(selectBrawlerQuery, selectBrawlerValues, function (err, result) {
+            if (err) {
+                console.error('Errore durante il recupero del brawler associato al giocatore:', err);
+                return;
+            }
+            console.log(result[0])
+            if (result[0] && result[0].ID_Brawler != undefined) {
+                const brawlerID = result[0].ID_Brawler;
+
+                const updateBrawlerQuery = "UPDATE Brawler SET Available = 1 WHERE ID = ?";
+                const updateBrawlerValues = [brawlerID];
+
+                executeQuery(updateBrawlerQuery, updateBrawlerValues, function (err, result) {
+                    if (err) {
+                        console.error('Errore available brawler', err);
+                        return;
+                    }
+                });
+            }
+        });
+
+        delete clientConnections[wsc];
 
         const deleteQuery = "DELETE FROM Player WHERE ID = ?";
-        const values = [clientID];
+        let values = [clientConnections[wsc]];
 
         executeQuery(deleteQuery, values, function (err, result) {
             if (err) {
